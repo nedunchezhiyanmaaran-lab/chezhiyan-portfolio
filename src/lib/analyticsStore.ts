@@ -197,10 +197,17 @@ export function updateTimeSpent(secondsToAdd: number): void {
 
 export async function logLeadInquiry(lead: Omit<LeadInquiry, 'id' | 'timestamp'>): Promise<void> {
   try {
+    if (!supabase) {
+      console.warn('Supabase is not initialized, saving lead to localStorage fallback.');
+      saveToLocalStorageFallback(lead);
+      return;
+    }
+
     const { error } = await supabase
-      .from('leads')
+      .from('portfolio_leads')
       .insert([
         {
+          id: `lead_${Date.now()}`,
           name: lead.name,
           email: lead.email,
           subject: lead.subject || 'Direct Contact Form Submission',

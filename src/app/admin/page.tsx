@@ -15,7 +15,6 @@ import {
   LeadInquiry,
   LiveLinkClickLog
 } from '@/lib/analyticsStore';
-import { supabase } from '@/lib/supabase';
 
 
 export default function AdminPage() {
