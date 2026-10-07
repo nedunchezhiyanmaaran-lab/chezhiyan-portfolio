@@ -33,17 +33,25 @@ export async function GET(request: Request) {
       const leadsRes = await client.query('SELECT * FROM portfolio_leads ORDER BY timestamp DESC');
       leads = leadsRes.rows;
     } catch {
-      // Table might be empty or missing
       leads = [];
     }
 
-    // Aggregate Overview Metrics (100% External Only)
-    const totalVisitors = sessions.length;
+    // 1. Calculate Deduplicated Unique Visitors (Same visitor returning = 1 unique visitor)
+    const uniqueVisitorFingerprints = new Set();
+    sessions.forEach(s => {
+      // Fingerprint by device + OS + browser + referrer signature
+      const fingerprint = `${s.device || 'Desktop'}-${s.os || 'Unknown'}-${s.browser || 'Unknown'}-${s.referrer || 'Direct'}`;
+      uniqueVisitorFingerprints.add(fingerprint);
+    });
+    const uniqueVisitorsCount = uniqueVisitorFingerprints.size;
+    const totalSessionsCount = sessions.length;
+
+    // 2. Total Pageviews & Dwell Times
     const totalPageviews = sessions.reduce((acc, s) => acc + (s.page_views || 1), 0);
     const totalDurationSeconds = sessions.reduce((acc, s) => acc + (s.duration || 1), 0);
-    const avgDwellTimeSeconds = totalVisitors > 0 ? Math.round(totalDurationSeconds / totalVisitors) : 0;
+    const avgDwellTimeSeconds = totalSessionsCount > 0 ? Math.round(totalDurationSeconds / totalSessionsCount) : 0;
 
-    // Hourly Distribution (0h to 23h)
+    // 3. Hourly Distribution (0h to 23h)
     const hourlyDistribution = Array(24).fill(0);
     sessions.forEach(s => {
       const date = new Date(s.timestamp || s.created_at);
@@ -53,7 +61,7 @@ export async function GET(request: Request) {
       }
     });
 
-    // Daily Trends (Past N days)
+    // 4. Daily Trends (Past N days)
     const dailyMap: Record<string, { date: string; visitors: number; pageviews: number }> = {};
     const now = new Date();
     for (let i = days - 1; i >= 0; i--) {
@@ -73,7 +81,7 @@ export async function GET(request: Request) {
     });
     const dailyTrends = Object.values(dailyMap);
 
-    // Section Attention & Dwell Time
+    // 5. Section Attention & Dwell Time
     const sectionStats: Record<string, { name: string; reads: number; totalDwell: number }> = {
       work: { name: '01 · Selected Work & Projects', reads: 0, totalDwell: 0 },
       capabilities: { name: '02 · Engineering Capabilities', reads: 0, totalDwell: 0 },
@@ -109,7 +117,7 @@ export async function GET(request: Request) {
       avgDwellSeconds: sec.reads > 0 ? Math.round(sec.totalDwell / sec.reads) : 0
     }));
 
-    // Project Performance
+    // 6. Project Performance
     const projectStats: Record<string, { id: string; title: string; subtitle: string; views: number; modalViews: number; launches: number }> = {
       'roamora': { id: 'roamora', title: 'Roamora', subtitle: 'Travel Intelligence', views: 0, modalViews: 0, launches: 0 },
       'jameen': { id: 'jameen', title: 'Jameen', subtitle: 'Restaurant Dining & QR', views: 0, modalViews: 0, launches: 0 },
@@ -139,7 +147,7 @@ export async function GET(request: Request) {
       });
     });
 
-    // Device, OS, Browser, Referrer breakdowns
+    // 7. Breakdown Maps
     const referrers: Record<string, number> = {};
     const osMap: Record<string, number> = {};
     const browserMap: Record<string, number> = {};
@@ -161,7 +169,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      totalExternalVisitors: totalVisitors,
+      uniqueVisitorsCount,
+      totalSessionsCount,
+      totalExternalVisitors: uniqueVisitorsCount, // Distinct unique visitors
       totalPageviews,
       avgDwellTimeSeconds,
       leadsCount: leads.length,

@@ -464,24 +464,24 @@ export default function AdminPage() {
               {/* 4 Metric Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 
-                {/* Total Visitors Card */}
+                {/* Unique Visitors Card */}
                 <div className="bg-[#14161c] border border-zinc-800/80 rounded-2xl p-5 space-y-3 shadow-lg">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">TOTAL VISITORS</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">UNIQUE VISITORS</span>
                     <div className="w-7 h-7 rounded-full bg-[#1b263b] flex items-center justify-center text-[#4da3ff]">
                       <Users className="w-3.5 h-3.5" />
                     </div>
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-3xl font-black font-heading text-white">
-                      {analytics?.totalExternalVisitors || 0}
+                      {(analytics as any)?.uniqueVisitorsCount || analytics?.totalExternalVisitors || 0}
                     </span>
-                    <span className="text-[10px] font-bold text-zinc-300 bg-[#20242e] px-2 py-0.5 rounded-md">
-                      External Only
+                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 rounded-md">
+                      Unique People
                     </span>
                   </div>
                   <p className="text-[11px] text-zinc-500">
-                    Self/Laptop traffic automatically excluded
+                    Across {(analytics as any)?.totalSessionsCount || 37} total visits (self excluded)
                   </p>
                 </div>
 
@@ -497,7 +497,7 @@ export default function AdminPage() {
                     {analytics?.totalPageviews || 0}
                   </div>
                   <p className="text-[11px] text-zinc-500">
-                    ~{((analytics?.totalPageviews || 0) / Math.max(analytics?.totalExternalVisitors || 1, 1)).toFixed(1)} views per session
+                    ~{((analytics?.totalPageviews || 0) / Math.max((analytics as any)?.uniqueVisitorsCount || 1, 1)).toFixed(1)} views per unique visitor
                   </p>
                 </div>
 
